@@ -11,11 +11,12 @@ defmodule BstkInterfaceWeb.TileSlotView do
     %{data: render_one(tile, TileSlotView, "tile_slots.json")}
   end
 
-  def render("tile_slot.json", %{tile_slot: {_coord, %Bstk.TileSlot{tile_hash: tile_hash, x: x, y: y}}}) do
+  def render("tile_slot.json", %{tile_slot: {_coord, %Bstk.TileSlot{tile_hash: tile_hash, tile_slot_hash: tile_slot_hash, x: x, y: y}}}) do
     #IO.puts("in render tile_slot.json")
     %{x: x,
       y: y,
-      tile_hash: tile_hash}
+      tile_hash: tile_hash,
+      tile_slot_hash: tile_slot_hash}
 
   end
 end

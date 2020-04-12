@@ -19,6 +19,8 @@
     var margin=3;
     var cardWidth = 30;
     var cardHeight = 30;
+    var raycaster = new THREE.Raycaster();
+    var mouse = new THREE.Vector2(), INTERSECTED;
 
     var vortexGrid = [9,8,7,6,5,3,5,6,7,8,9,
                       8,7,6,5,4,4,4,5,6,7,8,
@@ -50,7 +52,7 @@
       addRenderer();
       initChannel();
       //addStats();
-      //addControlsGui();
+      addControlsGui();
 
       animate();
     }
@@ -68,10 +70,17 @@
       window.addEventListener( 'swapTiles', swapTiles, false);
       window.addEventListener( 'resize', onWindowResize, false );
       document.addEventListener( 'keydown', onKeyDown, false );
+      window.addEventListener( 'keyDownU', moveCameraOut, false);
+      window.addEventListener( 'keyDownI', moveCameraIn, false);
+      window.addEventListener( 'keyDownLeft', moveCameraLeft, false);
+      window.addEventListener( 'keyDownRight', moveCameraRight, false);
+      window.addEventListener( 'keyDownUp', moveCameraUp, false);
+      window.addEventListener( 'keyDownDown', moveCameraDown, false);
+      window.addEventListener( 'mousemove', onMouseMove, false );
     }
 
     function addCameras(){
-      cameraPerspective = new THREE.PerspectiveCamera( 30, aspect, 150, 3000 );
+      cameraPerspective = new THREE.PerspectiveCamera( 30, aspect, 1, 20000 );
       cameraPerspectiveHelper = new THREE.CameraHelper( cameraPerspective );
       cameraPerspective.position.z = 0;
       scene.add( cameraPerspectiveHelper );
@@ -198,8 +207,8 @@
       SCREEN_HEIGHT = window.innerHeight;
       aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
       renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
-      camera.aspect = aspect;
-      camera.updateProjectionMatrix();
+      //camera.aspect = aspect;
+      //camera.updateProjectionMatrix();
 
       cameraPerspective.aspect = aspect;
       cameraPerspective.updateProjectionMatrix();
@@ -218,7 +227,20 @@
     }
 
     function render() {
-      var r = 1;
+      // find intersections
+
+				raycaster.setFromCamera( mouse, activeCamera );
+
+				var intersects = raycaster.intersectObjects( mesh3.children );
+        //console.log(mesh3);
+				for ( var i = 0; i < intersects.length; i++ ) {
+		      console.log(intersects[ i ].object.name);
+          console.log(intersects[ i ].object.material.color);
+
+          intersects[i].object.material.color.set( 0xff0000 )
+	      }
+
+    
 
       //mesh.position.x = Math.abs(700 * Math.cos( r ));
       //mesh.position.z = 700 * Math.sin( r );
@@ -227,7 +249,7 @@
       //mesh.children[ 0 ].position.z = 70 * Math.sin( r );
       if ( activeCamera === cameraPerspective ) {
         //cameraPerspective.fov = 35 + 30 * Math.sin( 0.5 );
-        cameraPerspective.far = 2000;
+        //cameraPerspective.far = 2000;
         cameraPerspective.updateProjectionMatrix();
         cameraPerspectiveHelper.update();
         cameraPerspectiveHelper.visible = true;
@@ -286,7 +308,7 @@
       var sphereGeometry = new THREE.SphereGeometry(10, 32, 16);
 
       var cardGeometry =  new THREE.BoxBufferGeometry( cardWidth, cardHeight, 1 );
-
+      cardGeometry.computeBoundingSphere();
 
       cards = [...Array(board.width)].map(e => Array(board.height));
       board.tile_slots.forEach(function(element) {
@@ -303,10 +325,11 @@
         card.position.z = 1000;
         card.position.x = (Math.floor(element.x)*cardWidth) + margin*Math.floor(element.x) - SCREEN_WIDTH/8;
         card.position.y = (Math.floor(element.y)*cardHeight) + margin*Math.floor(element.y) - SCREEN_HEIGHT/4;
-        console.log(element.x + " " + element.y)
-        console.log(card.position)
-        console.log(card.material.color)
+        
+        card.name = element.tile_slot_hash;
+
         mesh3.add(card);
+        cards[element.x][element.y] = card;
 
 
         if(element.tile_hash != null){
@@ -319,8 +342,56 @@
         }
       });
       
+      cameraPerspective.position.x = Math.floor(cards.length/2)*cardWidth + margin* Math.floor(cards.length/2);
+      cameraPerspective.position.y = Math.floor(cards[0].length/2)*cardWidth - margin * Math.floor(cards[0].length/2);
+      cameraPerspective.position.z = cards.length* (-60);
+      console.log(cards.length)
+      console.log(cards[0].length)
+
     }
 
+    function moveCameraOut(event){
+      if(activeCamera.position.z > -8000)
+        activeCamera.position.z = activeCamera.position.z-100;
+    }
 
+    function moveCameraIn(event){
+      if(activeCamera.position.z < 800)
+        activeCamera.position.z = activeCamera.position.z+100;
+      
+    }
+
+    function moveCameraLeft(event){
+      console.log('move left')
+      
+        activeCamera.position.x = activeCamera.position.x-100;
+      
+    }
+    
+    function moveCameraRight(event){
+      console.log('zoom right')
+      activeCamera.position.x = activeCamera.position.x+100;
+      
+    }
+    
+    function moveCameraUp(event){
+      console.log('zoom up')
+      activeCamera.position.y = activeCamera.position.y-100;
+      
+    }
+    
+    function moveCameraDown(event){
+      console.log('zoom down')
+      activeCamera.position.y = activeCamera.position.y+100;
+      
+    }
+
+    function onMouseMove( event ) {
+
+      event.preventDefault();
+
+				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    }
 
   </script>

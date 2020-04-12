@@ -59,7 +59,7 @@ socket.connect()
 let game_loaded = false;
 //document.addEventListener("DOMContentLoaded", function(event) {
 addEventListener("load", function() {
-  
+  console.log("load event caught")
   /*console.log("Loading Sockets...")
   let channel = socket.channel("game:1", {}); //TODOMFD: THis is a hard coded Database ID, needs changed!
 
@@ -75,6 +75,7 @@ addEventListener("load", function() {
 
 
   document.addEventListener( 'keydown', function(event) {
+    console.log("keydown firing")
     switch( event.keyCode ) {
       case 73: //I
         console.log("I");
@@ -87,10 +88,29 @@ addEventListener("load", function() {
         var event = new Event("keyDownU");
         window.dispatchEvent(event);
         break;
+      case 37: //Left
+        console.log("left");
+        var event = new Event("keyDownLeft");
+        window.dispatchEvent(event);
+        break;
+      case 39: //Right
+        console.log("right");
+        var event = new Event("keyDownRight");
+        window.dispatchEvent(event);
+        break;
+      case 38: //Up
+        console.log("up");
+        var event = new Event("keyDownUp");
+        window.dispatchEvent(event);
+        break; 
+      case 40: //Down
+        console.log("down");
+        var event = new Event("keyDownDown");
+        window.dispatchEvent(event);
+        break; 
     }
   }, false);
 
-  console.log('adding event listener')
 
   document.addEventListener( 'doJoinChannel', function(event) {
     console.log("caught doJoinChannel")
@@ -99,16 +119,13 @@ addEventListener("load", function() {
       .receive("ok", resp => {
         var event = new Event("drawBoard");
         event.board = resp.board.data;
-        console.log("board:")
-        console.log(event.board)
         window.dispatchEvent(event);
       })
       .receive("error", resp => { console.log("Unable to join " + event.channelID, resp) });
   });
 
-  console.log("load event caught")
+
   if(!game_loaded){
-    console.log(game_loaded)
     var event = new Event("initGame");
     game_loaded = true;
     window.dispatchEvent(event);
