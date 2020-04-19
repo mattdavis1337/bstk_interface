@@ -6,10 +6,12 @@ defmodule BstkInterface.Application do
   use Application
 
   def start(_type, _args) do
+    import Supervisor.Spec, warn: false
     # List all child processes to be supervised
     children = [
       # Start the endpoint when the application starts
-      BstkInterfaceWeb.Endpoint
+      BstkInterfaceWeb.Endpoint,
+      supervisor(BstkInterface.Presence, [])
       # Starts a worker by calling: BstkInterface.Worker.start_link(arg)
       # {BstkInterface.Worker, arg},
     ]

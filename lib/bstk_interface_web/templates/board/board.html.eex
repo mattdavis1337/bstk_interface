@@ -18,7 +18,7 @@
     var card2;
     var margin=3;
     var cardWidth = 30;
-    var cardHeight = 30;
+    var cardHeight = 40;
     var raycaster = new THREE.Raycaster();
     var mouse = new THREE.Vector2(), INTERSECTED;
 
@@ -48,7 +48,7 @@
       addCameras();
       addMeshes();
       addLight();
-      addStarscape();
+      //addStarscape();
       addRenderer();
       initChannel();
       //addStats();
@@ -57,26 +57,50 @@
       animate();
     }
 
-    function initContainer(){
-      container = document.createElement( 'div' );
-      document.body.appendChild( container );
-    }
 
-    function initScene(){
-        scene = new THREE.Scene();
-    }
+    function render() {
+      // find intersections
 
-    function addEventListeners(){
-      window.addEventListener( 'swapTiles', swapTiles, false);
-      window.addEventListener( 'resize', onWindowResize, false );
-      document.addEventListener( 'keydown', onKeyDown, false );
-      window.addEventListener( 'keyDownU', moveCameraOut, false);
-      window.addEventListener( 'keyDownI', moveCameraIn, false);
-      window.addEventListener( 'keyDownLeft', moveCameraLeft, false);
-      window.addEventListener( 'keyDownRight', moveCameraRight, false);
-      window.addEventListener( 'keyDownUp', moveCameraUp, false);
-      window.addEventListener( 'keyDownDown', moveCameraDown, false);
-      window.addEventListener( 'mousemove', onMouseMove, false );
+				raycaster.setFromCamera( mouse, activeCamera );
+
+				var intersects = raycaster.intersectObjects( mesh3.children );
+        //console.log(mesh3);
+				for ( var i = 0; i < intersects.length; i++ ) {
+		      //console.log(intersects[ i ].object.name);
+          //console.log(intersects[ i ].object.material.color);
+
+          intersects[i].object.material.color.set( 0xff0000 )
+	      }
+
+    
+
+      //mesh.position.x = Math.abs(700 * Math.cos( r ));
+      //mesh.position.z = 700 * Math.sin( r );
+      //mesh.position.y = 700 * Math.sin( r );
+      //mesh.children[ 0 ].position.x = 70 * Math.cos( 2 * r );
+      //mesh.children[ 0 ].position.z = 70 * Math.sin( r );
+      if ( activeCamera === cameraPerspective ) {
+        //cameraPerspective.fov = 35 + 30 * Math.sin( 0.5 );
+        //cameraPerspective.far = 2000;
+        cameraPerspective.updateProjectionMatrix();
+        cameraPerspectiveHelper.update();
+        cameraPerspectiveHelper.visible = true;
+        cameraOrthoHelper.visible = false;
+      } else {
+        cameraOrtho.far = 2000;
+        cameraOrtho.updateProjectionMatrix();
+        cameraOrthoHelper.update();
+        cameraOrthoHelper.visible = true;
+        cameraPerspectiveHelper.visible = false;
+      }
+      cameraRig.lookAt( mesh3.position );
+      renderer.clear();
+      activeHelper.visible = false;
+      renderer.setViewport( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
+      renderer.render( scene, activeCamera );
+      activeHelper.visible = true;
+      //renderer.setViewport( SCREEN_WIDTH/2, 0, SCREEN_WIDTH/2, SCREEN_HEIGHT );
+      //renderer.render( scene, camera );
     }
 
     function addCameras(){
@@ -107,6 +131,67 @@
       cameraRig.add( cameraOrtho );
     
       scene.add( cameraRig );
+    }
+
+    function drawBoard(event){
+      console.log("adding tiles...")
+      board = event.board;
+      var sphereMaterial = new THREE.MeshNormalMaterial();
+      var sphereGeometry = new THREE.SphereGeometry(10, 32, 16);
+
+      var cardGeometry =  new THREE.BoxBufferGeometry( cardWidth, cardHeight, 1 );
+      cardGeometry.computeBoundingSphere();
+
+      cards = [...Array(board.width)].map(e => Array(board.height));
+      board.tile_slots.forEach(function(element) {
+        var red = parseInt("550000", 16);
+        var green = parseInt("00FF00", 16);
+        var blue = parseInt("000055", 16);
+        color =  red + blue + (element.x)*(element.y);
+        
+        var cardMaterial = new THREE.MeshBasicMaterial({color: color});
+        var card = new THREE.Mesh(
+          cardGeometry,
+          cardMaterial
+        );
+        card.position.z = 1000;
+        card.position.x = (Math.floor(element.x)*cardWidth) + margin*Math.floor(element.x) - SCREEN_WIDTH/8;
+        card.position.y = (Math.floor(element.y)*cardHeight) + margin*Math.floor(element.y) - SCREEN_HEIGHT/4;
+        
+        card.name = element.tile_slot_hash;
+
+        mesh3.add(card);
+        cards[element.x][element.y] = card;
+
+        if(element.tile_hash != null){
+          tile = board.tiles[element.tile_hash];
+          var sphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
+          sphere.position.x = 0;
+          sphere.position.y = 0;
+          sphere.position.z = 0;
+          card.add( sphere );
+        }
+      });
+
+      var bannerGeometry =  new THREE.BoxBufferGeometry( 2440, 440, 1 );
+      var texture = new THREE.TextureLoader().load( '/images/BANDSTOCK5.png' );
+      var bannerMaterial = new THREE.MeshBasicMaterial({ map: texture });
+      var banner = new THREE.Mesh(
+          bannerGeometry,
+          bannerMaterial
+        );
+      banner.position.x = Math.floor(cards.length/2)*cardWidth - 100;
+      banner.position.y = -540;
+      banner.position.z = 0;
+      banner.rotation.z = Math.PI;
+
+      mesh3.add(banner);
+
+      
+      cameraPerspective.position.x = Math.floor(cards.length/2)*cardWidth + margin* Math.floor(cards.length/2);
+      cameraPerspective.position.y = Math.floor(cards[0].length/2)*cardWidth - margin * Math.floor(cards[0].length/2);
+      cameraPerspective.position.z = cards.length* (-80);
+
     }
 
     function addMeshes(){
@@ -226,49 +311,27 @@
       //stats.update();
     }
 
-    function render() {
-      // find intersections
-
-				raycaster.setFromCamera( mouse, activeCamera );
-
-				var intersects = raycaster.intersectObjects( mesh3.children );
-        //console.log(mesh3);
-				for ( var i = 0; i < intersects.length; i++ ) {
-		      console.log(intersects[ i ].object.name);
-          console.log(intersects[ i ].object.material.color);
-
-          intersects[i].object.material.color.set( 0xff0000 )
-	      }
-
     
 
-      //mesh.position.x = Math.abs(700 * Math.cos( r ));
-      //mesh.position.z = 700 * Math.sin( r );
-      //mesh.position.y = 700 * Math.sin( r );
-      //mesh.children[ 0 ].position.x = 70 * Math.cos( 2 * r );
-      //mesh.children[ 0 ].position.z = 70 * Math.sin( r );
-      if ( activeCamera === cameraPerspective ) {
-        //cameraPerspective.fov = 35 + 30 * Math.sin( 0.5 );
-        //cameraPerspective.far = 2000;
-        cameraPerspective.updateProjectionMatrix();
-        cameraPerspectiveHelper.update();
-        cameraPerspectiveHelper.visible = true;
-        cameraOrthoHelper.visible = false;
-      } else {
-        cameraOrtho.far = 2000;
-        cameraOrtho.updateProjectionMatrix();
-        cameraOrthoHelper.update();
-        cameraOrthoHelper.visible = true;
-        cameraPerspectiveHelper.visible = false;
-      }
-      cameraRig.lookAt( mesh3.position );
-      renderer.clear();
-      activeHelper.visible = false;
-      renderer.setViewport( 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
-      renderer.render( scene, activeCamera );
-      activeHelper.visible = true;
-      //renderer.setViewport( SCREEN_WIDTH/2, 0, SCREEN_WIDTH/2, SCREEN_HEIGHT );
-      //renderer.render( scene, camera );
+    function initContainer(){
+      container = document.createElement( 'div' );
+      document.body.appendChild( container );
+    }
+
+    function initScene(){
+        scene = new THREE.Scene();
+    }
+    function addEventListeners(){
+      window.addEventListener( 'swapTiles', swapTiles, false);
+      window.addEventListener( 'resize', onWindowResize, false );
+      document.addEventListener( 'keydown', onKeyDown, false );
+      window.addEventListener( 'keyDownU', moveCameraOut, false);
+      window.addEventListener( 'keyDownI', moveCameraIn, false);
+      window.addEventListener( 'keyDownLeft', moveCameraLeft, false);
+      window.addEventListener( 'keyDownRight', moveCameraRight, false);
+      window.addEventListener( 'keyDownUp', moveCameraUp, false);
+      window.addEventListener( 'keyDownDown', moveCameraDown, false);
+      window.addEventListener( 'mousemove', onMouseMove, false );
     }
 
     function swapTiles(event ) {
@@ -301,54 +364,7 @@
       }
     }
 
-    function drawBoard(event){
-      console.log("adding tiles...")
-      board = event.board;
-      var sphereMaterial = new THREE.MeshNormalMaterial();
-      var sphereGeometry = new THREE.SphereGeometry(10, 32, 16);
-
-      var cardGeometry =  new THREE.BoxBufferGeometry( cardWidth, cardHeight, 1 );
-      cardGeometry.computeBoundingSphere();
-
-      cards = [...Array(board.width)].map(e => Array(board.height));
-      board.tile_slots.forEach(function(element) {
-        var red = parseInt("550000", 16);
-        var green = parseInt("00FF00", 16);
-        var blue = parseInt("000055", 16);
-        color =  red + blue + (element.x)*(element.y);
-        
-        var cardMaterial = new THREE.MeshBasicMaterial({color: color});
-        var card = new THREE.Mesh(
-          cardGeometry,
-          cardMaterial
-        );
-        card.position.z = 1000;
-        card.position.x = (Math.floor(element.x)*cardWidth) + margin*Math.floor(element.x) - SCREEN_WIDTH/8;
-        card.position.y = (Math.floor(element.y)*cardHeight) + margin*Math.floor(element.y) - SCREEN_HEIGHT/4;
-        
-        card.name = element.tile_slot_hash;
-
-        mesh3.add(card);
-        cards[element.x][element.y] = card;
-
-
-        if(element.tile_hash != null){
-          tile = board.tiles[element.tile_hash];
-          var sphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
-          sphere.position.x = 0;
-          sphere.position.y = 0;
-          sphere.position.z = 0;
-          card.add( sphere );
-        }
-      });
-      
-      cameraPerspective.position.x = Math.floor(cards.length/2)*cardWidth + margin* Math.floor(cards.length/2);
-      cameraPerspective.position.y = Math.floor(cards[0].length/2)*cardWidth - margin * Math.floor(cards[0].length/2);
-      cameraPerspective.position.z = cards.length* (-60);
-      console.log(cards.length)
-      console.log(cards[0].length)
-
-    }
+    
 
     function moveCameraOut(event){
       if(activeCamera.position.z > -8000)
